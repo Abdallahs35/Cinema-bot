@@ -1,4 +1,4 @@
-import requests, json, os, sys
+import requests, json, os, sys, time
 from urllib.parse import urljoin, urldefrag
 from bs4 import BeautifulSoup
 
@@ -8,7 +8,25 @@ CHAT_ID = os.environ["CHAT_ID"]
 FILE = "seen.json"
 SKIP = {"whatson", "comingsoon"}
 
-html = requests.get(URL, timeout=20, headers={"User-Agent": "Mozilla/5.0"}).text
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+html = None
+for attempt in range(3):
+    try:
+        html = requests.get(URL, timeout=45, headers=HEADERS).text
+        break
+    except requests.exceptions.RequestException as e:
+        print("محاولة", attempt + 1, "فشلت:", type(e).__name__)
+        time.sleep(5)
+
+if html is None:
+    print("الموقع مردش، هنحاول تاني في الدورة الجاية")
+    sys.exit(0)
+
 soup = BeautifulSoup(html, "html.parser")
 
 
@@ -39,7 +57,7 @@ print("لقيت", len(movies), "فيلم")
 
 if not movies:
     print("مفيش أفلام اتقرأت")
-    sys.exit()
+    sys.exit(0)
 
 seen = set(json.load(open(FILE))) if os.path.exists(FILE) else None
 
